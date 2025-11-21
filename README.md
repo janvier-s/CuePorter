@@ -4,6 +4,7 @@
 
 CuePorter is a macOS app that batch-converts Mixed in Key cue points into native Serato Markers2 tags, so your hot cues show up automatically in djay and Serato DJ—no need to manually load each track in Serato.
 
+![CuePorter ScreenShot](https://files.catbox.moe/g02kvm.png)
 ## Features
 
 - ✅ **Batch conversion** – Process entire folders (and subfolders) in one go
@@ -16,7 +17,8 @@ CuePorter is a macOS app that batch-converts Mixed in Key cue points into native
 
 ## Requirements
 
-- macOS (tested on Apple Silicon; should work on Intel)
+- App works on macOS (tested on Apple Silicon; should work on Intel)
+- Source code works on all platforms
 - Your audio files must already have Mixed in Key cue point tags
 
 ## Installation
@@ -24,7 +26,10 @@ CuePorter is a macOS app that batch-converts Mixed in Key cue points into native
 1. Download the latest `CuePorter-macOS.zip` from [Releases](../../releases)
 2. Unzip and move `CuePorter.app` to your Applications folder
 3. **First time:** Right-click → **Open** to bypass Gatekeeper (the app isn't code-signed)
-4. After that, double-click normally
+4. If that fails, they can go to  
+   System Settings → Privacy & Security → Security,  
+   and click Open Anyway next to the “CuePorter” warning.
+5. After that, double-click normally
 
 ## Usage
 
@@ -46,7 +51,7 @@ If djay is currently running, quit and reopen it after conversion so it picks up
 - **Built with:** Python 3.13, Tkinter, [mutagen](https://github.com/quodlibet/mutagen), [serato-tools](https://github.com/Holzhaus/serato-tools)
 - **CLI version:** The repository also includes `convert_cues.py` for command-line batch conversion
 
-## Building from Source
+## Building from Source (for Windows and Linux)
 
 ```bash
 # Install dependencies
