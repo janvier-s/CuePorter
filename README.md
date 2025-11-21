@@ -93,6 +93,10 @@ MIT License – see [LICENSE](LICENSE) for details.
 
 Issues and pull requests welcome! If you encounter a bug or have a feature request, please open an issue.
 
+## Support
+
+If CuePorter saved you time or improved your workflow, you can support development with a tip on Ko-fi: [ko-fi.com/janvier_](https://ko-fi.com/janvier_).
+
 ---
 
-Vibe coded with [Warp](https://app.warp.dev/referral/XNMDEW) for DJs who love automation.
+100% vibe-coded with [Warp](https://app.warp.dev/referral/XNMDEW) for DJs who ♥️ automation.
