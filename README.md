@@ -90,4 +90,4 @@ Issues and pull requests welcome! If you encounter a bug or have a feature reque
 
 ---
 
-Made with ☕ for DJs who love automation.
+Vibe coded with [Warp](https://app.warp.dev/referral/XNMDEW) for DJs who love automation.
