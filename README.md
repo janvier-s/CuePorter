@@ -14,7 +14,8 @@ CuePorter is a macOS app that batch-converts Mixed in Key cue points into native
 - ✅ **Preserves original cue names** – Custom labels carry over; generic "ENERGY X" labels become "CUE #" in djay mode
 - ✅ **Progress tracking** – Live activity log shows which files were updated and which were skipped
 - ✅ **Supports FLAC, MP3, AIFF** – The formats where Serato Markers2 tags work reliably
-
+- 
+![djay ScreenShot](https://files.catbox.moe/3v789w.jpg)
 ## Requirements
 
 - App works on macOS (tested on Apple Silicon; should work on Intel)
