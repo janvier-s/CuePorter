@@ -83,7 +83,19 @@ def build_serato_entries_from_mik(mik_cues, color_mode: str = "djay"):
         color_bytes = color_enum.value
 
         # MIK time is already in milliseconds; Serato stores integer ms.
-        pos_ms = int(round(cue.get("time", 0)))
+        # Some versions of MIK can store slightly negative times for the first
+        # cue (e.g. -29ms). Serato's Markers2 format expects an *unsigned*
+        # 32‑bit integer here, so we clamp into the valid range.
+        raw_time = cue.get("time", 0) or 0
+        try:
+            pos_ms = int(round(float(raw_time)))
+        except (TypeError, ValueError):
+            pos_ms = 0
+        # Clamp to [0, 2^32-1]
+        if pos_ms < 0:
+            pos_ms = 0
+        elif pos_ms > 0xFFFFFFFF:
+            pos_ms = 0xFFFFFFFF
 
         entries.append(
             TrackCuesV2.CueEntry(
