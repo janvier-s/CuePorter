@@ -80,6 +80,10 @@ A: The Serato Markers2 tagging format varies by container, and I've only impleme
 **Q: Why does macOS say it's from an "unidentified developer"?**  
 A: I don't have an Apple Developer ID. Right-click → **Open** the first time, or go to System Settings → Privacy & Security → **Open Anyway**.
 
+## Support
+
+If CuePorter saved you time or improved your workflow, you can support development with a tip on Ko-fi: [ko-fi.com/janvier_](https://ko-fi.com/janvier_).
+
 ## License
 
 MIT License – see [LICENSE](LICENSE) for details.

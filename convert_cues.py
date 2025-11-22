@@ -103,7 +103,7 @@ def build_serato_entries_from_mik(mik_cues, color_mode: str = "djay"):
 
 
 def write_serato_markers_v2(
-    audio, filepath, mik_cues, color_mode: str = "djay", log_fn=None
+    audio, filepath, mik_cues, color_mode: str = "djay", overwrite: bool = False, log_fn=None
 ):
     """Write proper Serato Markers2 data so djay/Serato can read the cues.
 
@@ -115,6 +115,13 @@ def write_serato_markers_v2(
 
     # FLAC path: Vorbis comment with base64 of GEOB payload.
     if ext == ".flac":
+        # Check for existing markers
+        if not overwrite and "serato_markers_v2" in audio:
+            msg = "Skipping: Existing Serato markers found (use --overwrite to replace)."
+            if log_fn: log_fn(msg)
+            else: print("   -", msg)
+            return False
+
         tags = TrackCuesV2.__new__(TrackCuesV2)  # bypass __init__
         tags.raw_data = None
         tags.entries = entries
@@ -124,6 +131,11 @@ def write_serato_markers_v2(
 
         geob_bytes = FLAC_SERATO_HEADER + raw
         comment_val = base64.b64encode(geob_bytes).decode("ascii")
+        
+        # Explicitly remove existing tag if overwriting
+        if "serato_markers_v2" in audio:
+            del audio["serato_markers_v2"]
+            
         audio["serato_markers_v2"] = comment_val
         audio.save()
         return True
@@ -133,6 +145,14 @@ def write_serato_markers_v2(
         try:
             # serato-tools requires the filepath for these formats
             tags = TrackCuesV2(filepath)
+            
+            # Check for existing entries
+            if not overwrite and tags.entries:
+                msg = "Skipping: Existing Serato markers found (use --overwrite to replace)."
+                if log_fn: log_fn(msg)
+                else: print("   -", msg)
+                return False
+                
         except Exception as e:
             msg = f"Unable to open Serato tags for '{os.path.basename(filepath)}': {e}"
             if log_fn:
@@ -159,7 +179,7 @@ def write_serato_markers_v2(
     return False
 
 
-def process_track(filepath, color_mode: str = "djay", log_fn=None):
+def process_track(filepath, color_mode: str = "djay", overwrite: bool = False, log_fn=None):
     def _log(msg: str):
         if log_fn:
             log_fn(msg)
@@ -187,16 +207,52 @@ def process_track(filepath, color_mode: str = "djay", log_fn=None):
 
         _log(f"-> Processing: {os.path.basename(filepath)}")
 
-        mik_data_b64 = audio[mik_tag_key][0]
-        mik_data_json = base64.b64decode(mik_data_b64)
-        mik_cues = json.loads(mik_data_json).get("cues", [])
+        # Mixed In Key may store cue data in different tag types:
+        # - ID3 TXXX/CUEPOINTS (text frame, often list-like)
+        # - MP4/other formats as a simple string
+        # - ID3 GEOB:CuePoints (binary GEOB frame containing a base64 string)
+        # Handle these cases robustly and always end up with the base64 text.
+        mik_tag = audio[mik_tag_key]
+
+        # Extract the raw value from the tag in a tolerant way
+        if isinstance(mik_tag, (list, tuple)):
+            raw_val = mik_tag[0]
+        elif hasattr(mik_tag, "text"):
+            # ID3 text frame (e.g. TXXX)
+            raw_val = mik_tag.text[0] if mik_tag.text else ""
+        elif hasattr(mik_tag, "data"):
+            # GEOB frame (e.g. GEOB:CuePoints)
+            raw_val = mik_tag.data
+        else:
+            raw_val = mik_tag
+
+        # Normalise to a string that should contain base64 JSON
+        if isinstance(raw_val, bytes):
+            raw_str = raw_val.decode("utf-8", errors="ignore")
+        else:
+            raw_str = str(raw_val)
+
+        # Some tags store the JSON directly, some store base64-encoded JSON.
+        # Try base64 first; if that doesn't look like JSON, fall back to raw.
+        mik_bytes = None
+        try:
+            candidate = base64.b64decode(raw_str)
+            if candidate.lstrip().startswith(b"{"):
+                mik_bytes = candidate
+        except Exception:
+            mik_bytes = None
+
+        if mik_bytes is None:
+            mik_bytes = raw_str.encode("utf-8", errors="ignore")
+
+        mik_cues = json.loads(mik_bytes).get("cues", [])
 
         if not mik_cues:
             _log("No cues found in Mixed in Key tag; skipping write.")
             return False
 
         if write_serato_markers_v2(
-            audio, filepath, mik_cues, color_mode=color_mode, log_fn=_log
+            audio, filepath, mik_cues, color_mode=color_mode, overwrite=overwrite, log_fn=_log
         ):
             _log(f"SUCCESS: Converted {len(mik_cues)} cue points.")
             return True
@@ -213,8 +269,15 @@ if __name__ == "__main__":
     print("--- MIK Cue to Serato Cue Converter (Corrected Colors) ---")
     print("🔴 WARNING: This script modifies your files. BACKUP YOUR MUSIC FIRST. 🔴\n")
 
-    if len(sys.argv) > 1:
-        target_path = sys.argv[1]
+    import argparse
+    parser = argparse.ArgumentParser(description="Convert Mixed In Key cues to Serato markers.")
+    parser.add_argument("path", nargs="?", help="Music folder path")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing Serato markers")
+    parser.add_argument("--color-mode", default="djay", choices=["djay", "energy"], help="Color mode")
+    args = parser.parse_args()
+
+    if args.path:
+        target_path = args.path
     else:
         target_path = input("Enter the full path to your music folder: ")
 
@@ -226,7 +289,7 @@ if __name__ == "__main__":
     processed_count = 0
     skipped_count = 0
 
-    print(f"\nScanning '{target_path}' for music files...")
+    print(f"\\nScanning '{target_path}' for music files...")
 
     all_files = []
     for root, dirs, files in os.walk(target_path):
@@ -244,7 +307,7 @@ if __name__ == "__main__":
         def cli_log(msg: str, _filename=filename):
             cli_messages.append(msg)
 
-        success = process_track(filepath, log_fn=cli_log)
+        success = process_track(filepath, color_mode=args.color_mode, overwrite=args.overwrite, log_fn=cli_log)
 
         status = "SUCCESS" if success else "SKIPPED"
         detail = None

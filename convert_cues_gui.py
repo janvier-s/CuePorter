@@ -298,6 +298,15 @@ class ConvertCuesApp:
             image=self.energy_tooltip_image if HAS_PIL else None,
         )
 
+        # Overwrite option
+        self.overwrite_var = tk.BooleanVar(value=False)
+        overwrite_check = ttk.Checkbutton(
+            color_frame,
+            text="Overwrite existing cues",
+            variable=self.overwrite_var,
+        )
+        overwrite_check.grid(row=0, column=5, sticky="w", padx=(20, 0))
+
         # Folder chooser
         ttk.Label(main, text="Music folder:").grid(row=4, column=0, sticky="w")
 
@@ -472,18 +481,19 @@ class ConvertCuesApp:
 
         self._set_running(True)
 
-        # Snapshot color mode for worker thread
+        # Snapshot options for worker thread
         color_mode = self.color_mode_var.get()
+        overwrite = bool(self.overwrite_var.get())
 
         # Launch worker thread
         self.worker_thread = threading.Thread(
             target=self._worker_run,
-            args=(folder, color_mode),
+            args=(folder, color_mode, overwrite),
             daemon=True,
         )
         self.worker_thread.start()
 
-    def _worker_run(self, folder: str, color_mode: str):
+    def _worker_run(self, folder: str, color_mode: str, overwrite: bool):
         try:
             all_files = []
             for root, dirs, files in os.walk(folder):
@@ -512,7 +522,7 @@ class ConvertCuesApp:
                     cli_messages.append(msg)
 
                 try:
-                    success = process_track(path, color_mode=color_mode, log_fn=gui_log)
+                    success = process_track(path, color_mode=color_mode, overwrite=overwrite, log_fn=gui_log)
                 except Exception as e:  # Safety net; process_track already catches a lot
                     success = False
                     cli_messages.append(f"ERROR processing file '{name}': {e}")
@@ -536,6 +546,9 @@ class ConvertCuesApp:
                     if any("No Mixed in Key cuepoints tag found" in m for m in cli_messages):
                         status = "SKIPPED"
                         detail = "No Mixed in Key cuepoints tag found; skipping."
+                    elif any("Existing Serato markers found" in m for m in cli_messages):
+                        status = "SKIPPED"
+                        detail = "Existing Serato markers found; skipping."
                     elif any("No cues found in Mixed in Key tag" in m for m in cli_messages):
                         status = "SKIPPED"
                         detail = "No Mixed in Key cues found; skipping."
