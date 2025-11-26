@@ -306,6 +306,9 @@ if __name__ == "__main__":
     all_files = []
     for root, dirs, files in os.walk(target_path):
         for filename in files:
+            # Skip macOS metadata files (._*)
+            if filename.startswith('._'):
+                continue
             if filename.lower().endswith(supported_extensions):
                 all_files.append(os.path.join(root, filename))
 

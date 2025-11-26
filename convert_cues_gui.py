@@ -497,9 +497,12 @@ class ConvertCuesApp:
         try:
             all_files = []
             for root, dirs, files in os.walk(folder):
-                for name in files:
-                    if name.lower().endswith(AUDIO_EXTENSIONS):
-                        all_files.append(os.path.join(root, name))
+                for filename in files:
+                    # Skip macOS metadata files (._*)
+                    if filename.startswith('._'):
+                        continue
+                    if filename.lower().endswith(AUDIO_EXTENSIONS):
+                        all_files.append(os.path.join(root, filename))
 
             total = len(all_files)
             self.message_queue.put(("status", f"Found {total} supported files."))
