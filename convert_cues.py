@@ -19,7 +19,7 @@ DJAY_INDEX_TO_CUECOLOR = {
     1: TrackCuesV2.CueColors.RED,
     2: TrackCuesV2.CueColors.ORANGE,
     3: TrackCuesV2.CueColors.BLUE1,
-    4: TrackCuesV2.CueColors.YELLOWORANGE,
+    4: TrackCuesV2.CueColors.YELLOW,
     5: TrackCuesV2.CueColors.LIMEGREEN2,
     6: TrackCuesV2.CueColors.MAGENTA,
     7: TrackCuesV2.CueColors.CYAN,
@@ -115,7 +115,12 @@ def build_serato_entries_from_mik(mik_cues, color_mode: str = "djay"):
 
 
 def write_serato_markers_v2(
-    audio, filepath, mik_cues, color_mode: str = "djay", overwrite: bool = False, log_fn=None
+    audio,
+    filepath,
+    mik_cues,
+    color_mode: str = "djay",
+    overwrite: bool = False,
+    log_fn=None,
 ):
     """Write proper Serato Markers2 data so djay/Serato can read the cues.
 
@@ -129,9 +134,13 @@ def write_serato_markers_v2(
     if ext == ".flac":
         # Check for existing markers
         if not overwrite and "serato_markers_v2" in audio:
-            msg = "Skipping: Existing Serato markers found (use --overwrite to replace)."
-            if log_fn: log_fn(msg)
-            else: print("   -", msg)
+            msg = (
+                "Skipping: Existing Serato markers found (use --overwrite to replace)."
+            )
+            if log_fn:
+                log_fn(msg)
+            else:
+                print("   -", msg)
             return False
 
         tags = TrackCuesV2.__new__(TrackCuesV2)  # bypass __init__
@@ -143,11 +152,11 @@ def write_serato_markers_v2(
 
         geob_bytes = FLAC_SERATO_HEADER + raw
         comment_val = base64.b64encode(geob_bytes).decode("ascii")
-        
+
         # Explicitly remove existing tag if overwriting
         if "serato_markers_v2" in audio:
             del audio["serato_markers_v2"]
-            
+
         audio["serato_markers_v2"] = comment_val
         audio.save()
         return True
@@ -157,14 +166,16 @@ def write_serato_markers_v2(
         try:
             # serato-tools requires the filepath for these formats
             tags = TrackCuesV2(filepath)
-            
+
             # Check for existing entries
             if not overwrite and tags.entries:
                 msg = "Skipping: Existing Serato markers found (use --overwrite to replace)."
-                if log_fn: log_fn(msg)
-                else: print("   -", msg)
+                if log_fn:
+                    log_fn(msg)
+                else:
+                    print("   -", msg)
                 return False
-                
+
         except Exception as e:
             msg = f"Unable to open Serato tags for '{os.path.basename(filepath)}': {e}"
             if log_fn:
@@ -191,7 +202,9 @@ def write_serato_markers_v2(
     return False
 
 
-def process_track(filepath, color_mode: str = "djay", overwrite: bool = False, log_fn=None):
+def process_track(
+    filepath, color_mode: str = "djay", overwrite: bool = False, log_fn=None
+):
     def _log(msg: str):
         if log_fn:
             log_fn(msg)
@@ -264,7 +277,12 @@ def process_track(filepath, color_mode: str = "djay", overwrite: bool = False, l
             return False
 
         if write_serato_markers_v2(
-            audio, filepath, mik_cues, color_mode=color_mode, overwrite=overwrite, log_fn=_log
+            audio,
+            filepath,
+            mik_cues,
+            color_mode=color_mode,
+            overwrite=overwrite,
+            log_fn=_log,
         ):
             _log(f"SUCCESS: Converted {len(mik_cues)} cue points.")
             return True
@@ -282,10 +300,17 @@ if __name__ == "__main__":
     print("🔴 WARNING: This script modifies your files. BACKUP YOUR MUSIC FIRST. 🔴\n")
 
     import argparse
-    parser = argparse.ArgumentParser(description="Convert Mixed In Key cues to Serato markers.")
+
+    parser = argparse.ArgumentParser(
+        description="Convert Mixed In Key cues to Serato markers."
+    )
     parser.add_argument("path", nargs="?", help="Music folder path")
-    parser.add_argument("--overwrite", action="store_true", help="Overwrite existing Serato markers")
-    parser.add_argument("--color-mode", default="djay", choices=["djay", "energy"], help="Color mode")
+    parser.add_argument(
+        "--overwrite", action="store_true", help="Overwrite existing Serato markers"
+    )
+    parser.add_argument(
+        "--color-mode", default="djay", choices=["djay", "energy"], help="Color mode"
+    )
     args = parser.parse_args()
 
     if args.path:
@@ -307,7 +332,7 @@ if __name__ == "__main__":
     for root, dirs, files in os.walk(target_path):
         for filename in files:
             # Skip macOS metadata files (._*)
-            if filename.startswith('._'):
+            if filename.startswith("._"):
                 continue
             if filename.lower().endswith(supported_extensions):
                 all_files.append(os.path.join(root, filename))
@@ -322,7 +347,12 @@ if __name__ == "__main__":
         def cli_log(msg: str, _filename=filename):
             cli_messages.append(msg)
 
-        success = process_track(filepath, color_mode=args.color_mode, overwrite=args.overwrite, log_fn=cli_log)
+        success = process_track(
+            filepath,
+            color_mode=args.color_mode,
+            overwrite=args.overwrite,
+            log_fn=cli_log,
+        )
 
         status = "SUCCESS" if success else "SKIPPED"
         detail = None
